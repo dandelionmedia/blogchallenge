@@ -96,15 +96,14 @@ const {useState,useEffect,useRef,useCallback}=React;
  *    - 규칙: allow read, write: if request.auth != null;
  */
 const CONFIG = {
-  GOOGLE_CLIENT_ID: "892450271971-cq5oggb0vgnnkcbtjlm51t6h4qg393c1.apps.googleusercontent.com",
+  GOOGLE_CLIENT_ID: "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com",
   FIREBASE: {
-    apiKey: "AIzaSyArbvaD2OAhKqCclGBcaiyvQT1bIvKx_uY",
-    authDomain: "blog-writing-challenge.firebaseapp.com",
-    projectId: "blog-writing-challenge",
-    storageBucket: "blog-writing-challenge.firebasestorage.app",
-    messagingSenderId: "538960448175",
-    appId: "1:538960448175:web:71bb41ae88a2f836fde25a", //
-    measurementId: "G-3G0JSB6GE1"
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "000000000",
+    appId: "YOUR_APP_ID"
   }
 };
 
@@ -279,6 +278,48 @@ const AIService = {
   },
   getLocalSuggestion(topic) {
     return ["📝 추천 제목:","1. ["+topic+"] 완벽 가이드 - 초보자도 쉽게!","2. "+topic+", 이것만 알면 됩니다 (2026 최신)","3. 나만 알고 싶은 "+topic+" 꿀팁 모음","","🏷️ 추천 키워드:",topic+", "+topic+" 방법, "+topic+" 팁, "+topic+" 후기, "+topic+" 추천","","📋 글 구성 아웃라인:","① 도입 - 공감 유도","② 핵심 내용 3가지 (소제목)","③ 나의 경험/사례","④ 마무리 - 요약 + CTA","","💡 차별화 포인트:","직접 경험한 사례와 before/after!","","⏰ 추천 발행 시간:","오전 8-9시 또는 오후 7-8시"].join("\n");
+  },
+  async writePost(topic, outline) {
+    const prompt = "당신은 10년차 네이버 블로그 전문 작가입니다. 아래 주제와 아웃라인을 기반으로 네이버 블로그에 바로 올릴 수 있는 완성도 높은 글을 작성하세요.\n\n"
+      +"【주제】"+topic+"\n\n"
+      +(outline ? "【참고 아웃라인】\n"+outline+"\n\n" : "")
+      +"【작성 규칙】\n"
+      +"1. 제목은 SEO 최적화 + 클릭 유도 (30자 이내)\n"
+      +"2. 서론: 공감 유도로 시작 (2-3문장)\n"
+      +"3. 본론: 소제목 3-4개로 구분, 각 소제목 아래 3-5문장\n"
+      +"4. 결론: 핵심 요약 + 행동 유도(CTA)\n"
+      +"5. 맨 아래에 추천 태그 5개 (#태그 형식)\n"
+      +"6. 전체 분량: 1500-2000자\n"
+      +"7. 말투: 친근한 '~요' 체\n"
+      +"8. 이모지를 적절히 활용\n"
+      +"9. 각 소제목은 【 】로 감싸기\n\n"
+      +"바로 복사해서 블로그에 올릴 수 있도록, 완성된 글만 출력하세요.";
+    try {
+      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:4000,
+          messages:[{role:"user",content:prompt}]
+        })
+      });
+      const d=await resp.json();
+      return d.content?.map(i=>i.text||"").join("\n") || null;
+    } catch(e) { return null; }
+  },
+  getLocalPost(topic) {
+    return "📌 ["+topic+"] 완벽 가이드 - 이것만 알면 됩니다!\n\n"
+      +"안녕하세요! 오늘은 많은 분들이 궁금해하시는 '"+topic+"'에 대해 이야기해볼게요. 저도 처음에는 막막했는데, 하나씩 알아가다 보니 정말 도움이 많이 됐거든요 😊\n\n"
+      +"【"+topic+"이란?】\n"
+      +topic+"은(는) 최근 많은 관심을 받고 있는 주제예요. 특히 블로그를 운영하시는 분들이라면 꼭 알아두셔야 할 내용인데요. 핵심을 쉽게 정리해드릴게요.\n\n"
+      +"【실전 활용법 3가지】\n"
+      +"첫 번째, 기본기를 탄탄히 다지는 것이 중요해요. 기초가 없으면 응용도 어렵거든요.\n"
+      +"두 번째, 매일 조금씩 실천하는 습관이 핵심이에요. 하루 10분이라도 꾸준히!\n"
+      +"세 번째, 다른 사람들의 사례를 참고하면 시행착오를 줄일 수 있어요.\n\n"
+      +"【초보자가 자주 하는 실수】\n"
+      +"가장 흔한 실수는 처음부터 완벽하려는 거예요. 완벽보다는 꾸준함이 훨씬 중요합니다. 작게 시작해서 점점 발전시켜 나가세요 💪\n\n"
+      +"【마무리】\n"
+      +"오늘 알려드린 내용만 잘 실천하셔도 "+topic+" 분야에서 확실한 성장을 느끼실 수 있을 거예요. 궁금한 점은 댓글로 남겨주세요!\n\n"
+      +"도움이 되셨다면 이웃추가 & 공감 부탁드려요 🙏\n\n"
+      +"#"+topic+" #"+topic+"방법 #"+topic+"팁 #블로그글쓰기 #유쌤클래스";
   }
 };
 
@@ -320,6 +361,8 @@ function ChallengeApp({user,onLogout}){
   const[note,setNote]=useState("");const[url,setUrl]=useState("");
   const[topicOpen,setTopicOpen]=useState(null);
   const[aiLoad,setAiLoad]=useState(false);const[aiText,setAiText]=useState("");
+  const[aiTopic,setAiTopic]=useState("");
+  const[postText,setPostText]=useState("");const[postLoad,setPostLoad]=useState(false);const[showPost,setShowPost]=useState(false);const[copied,setCopied]=useState(false);
   const[custTopic,setCustTopic]=useState("");
   const[celeb,setCeleb]=useState(null);
   const[selDay,setSelDay]=useState(null);
@@ -359,10 +402,23 @@ function ChallengeApp({user,onLogout}){
   };
 
   const getAi=async(topic)=>{
-    setAiLoad(true);setAiText("");
+    setAiLoad(true);setAiText("");setAiTopic(topic);
     const result = await AIService.getSuggestion(topic);
     setAiText(result || AIService.getLocalSuggestion(topic));
     setAiLoad(false);
+  };
+
+  const writePost=async()=>{
+    setPostLoad(true);setPostText("");setShowPost(true);
+    const result = await AIService.writePost(aiTopic, aiText);
+    setPostText(result || AIService.getLocalPost(aiTopic));
+    setPostLoad(false);
+  };
+
+  const copyPost=()=>{
+    navigator.clipboard.writeText(postText).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);}).catch(()=>{
+      const ta=document.createElement("textarea");ta.value=postText;document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);setCopied(true);setTimeout(()=>setCopied(false),2000);
+    });
   };
 
   const doReview=async()=>{
@@ -473,9 +529,44 @@ function ChallengeApp({user,onLogout}){
       {(aiLoad||aiText)&&<div className="modal-overlay" onClick={()=>{setAiText("");setAiLoad(false);}}><div className="modal-content" onClick={e=>e.stopPropagation()}>
         <h3 style={{fontFamily:"'Noto Serif KR',serif",fontSize:18,marginBottom:16}}>🤖 AI 글쓰기 코치</h3>
         {aiLoad?<div style={{textAlign:"center",padding:32}}><div className="spinner"/><p style={{color:"#8b7e6a",marginTop:12,fontSize:14}}>AI가 분석 중...</p></div>
-        :<div style={{fontSize:14,lineHeight:1.8,whiteSpace:"pre-wrap",color:"#d4c8b0"}}>{aiText}</div>}
-        <button onClick={()=>{setAiText("");setAiLoad(false);}} className="btn-secondary" style={{width:"100%",marginTop:20}}>닫기</button>
+        :<React.Fragment>
+          <div style={{fontSize:14,lineHeight:1.8,whiteSpace:"pre-wrap",color:"#d4c8b0"}}>{aiText}</div>
+          <div style={{marginTop:20,display:"flex",gap:8}}>
+            <button onClick={writePost} style={{flex:1,padding:"14px",background:"linear-gradient(135deg,#D4756B,#E88FAD)",border:"none",borderRadius:12,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+              ✍️ 이 주제로 글 작성하기
+            </button>
+            <button onClick={()=>{setAiText("");setAiLoad(false);}} className="btn-secondary" style={{padding:"14px 20px"}}>닫기</button>
+          </div>
+        </React.Fragment>}
       </div></div>}
+
+      {/* Blog Post Modal */}
+      {showPost&&<div className="modal-overlay" style={{padding:12}} onClick={()=>{setShowPost(false);setPostText("");}}>
+        <div className="modal-content" style={{maxWidth:480,maxHeight:"92vh",padding:0}} onClick={e=>e.stopPropagation()}>
+          <div style={{padding:"20px 20px 12px",borderBottom:"1px solid #3d342920",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,background:"#252017",borderRadius:"20px 20px 0 0",zIndex:2}}>
+            <div>
+              <h3 style={{fontFamily:"'Noto Serif KR',serif",fontSize:17}}>✍️ AI가 작성한 블로그 글</h3>
+              {aiTopic&&<p className="text-muted" style={{marginTop:2}}>주제: {aiTopic}</p>}
+            </div>
+            <span className="premium-badge">AI 작성</span>
+          </div>
+          <div style={{padding:"16px 20px",overflowY:"auto",maxHeight:"calc(92vh - 140px)"}}>
+            {postLoad?<div style={{textAlign:"center",padding:40}}>
+              <div className="spinner"/>
+              <p style={{color:"#8b7e6a",marginTop:16,fontSize:14}}>AI가 글을 작성하고 있어요...</p>
+              <p className="text-muted" style={{marginTop:6}}>1500~2000자 분량의 글을 생성 중입니다</p>
+            </div>
+            :<div style={{fontSize:14,lineHeight:2,whiteSpace:"pre-wrap",color:"#d4c8b0",wordBreak:"keep-all"}}>{postText}</div>}
+          </div>
+          {!postLoad&&postText&&<div style={{padding:"12px 20px 20px",borderTop:"1px solid #3d342920",display:"flex",gap:8,position:"sticky",bottom:0,background:"#252017",borderRadius:"0 0 20px 20px"}}>
+            <button onClick={copyPost} style={{flex:1,padding:"14px",background:copied?"#2d3b2a":"linear-gradient(135deg,#D4756B,#E88FAD)",border:"none",borderRadius:12,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",transition:"all .3s"}}>
+              {copied?"✅ 복사 완료!":"📋 글 전체 복사"}
+            </button>
+            <button onClick={()=>writePost()} className="btn-secondary" style={{padding:"14px 16px"}}>🔄 다시쓰기</button>
+            <button onClick={()=>{setShowPost(false);setPostText("");}} className="btn-secondary" style={{padding:"14px 16px"}}>닫기</button>
+          </div>}
+        </div>
+      </div>}
 
       {showReview&&<div className="modal-overlay" onClick={()=>{setShowReview(false);setReviewText("");}}><div className="modal-content" onClick={e=>e.stopPropagation()}>
         <h3 style={{fontFamily:"'Noto Serif KR',serif",fontSize:18,marginBottom:4}}>📝 AI 글 리뷰</h3>
